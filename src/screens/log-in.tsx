@@ -11,12 +11,13 @@ import {
   Assets,
   Avatar,
 } from 'react-native-ui-lib';
+import {useDispatch, useSelector} from 'react-redux';
+import roomReducer from '../stores/room/slice';
 import {SCREEN_NAME} from '../navigation/constants';
 import {createRoom} from '../services/api/room';
+import {RootState} from '../stores';
 
 const TABS = ['Create Room', 'Join Room'];
-
-const HOST_ID = 'ASDSWE';
 
 const mappedTabs = TABS.map<TabControllerItemProps>((tab, index) => ({
   label: tab,
@@ -34,23 +35,52 @@ const mappedTabs = TABS.map<TabControllerItemProps>((tab, index) => ({
 export const LogIn = ({navigation}: any) => {
   const [index, setIndex] = useState(0);
   const [nickname, setNickName] = useState('');
+  const [password, setPassword] = useState('');
+  const dispatch = useDispatch();
+  const userId = useSelector<RootState>(state => state.room.userId) as string;
 
   const onChangeTab = useCallback(tab => {
     setIndex(tab);
   }, []);
 
+  const onChangeRoomId = useCallback(
+    room => {
+      dispatch(roomReducer.actions.setRoomId(room));
+    },
+    [dispatch],
+  );
+
+  const onChangeNickname = useCallback(
+    nick => {
+      setNickName(nick);
+      dispatch(roomReducer.actions.setNickname(nick));
+    },
+    [dispatch],
+  );
+  const onChangePassword = useCallback(
+    pass => {
+      setPassword(pass);
+      dispatch(roomReducer.actions.setPassword(pass));
+    },
+    [dispatch],
+  );
+
   const onContinue = useCallback(async () => {
     if (index === 0) {
       try {
-        const room = await createRoom(HOST_ID, nickname);
+        const room = await createRoom(userId, nickname);
         console.log({room});
-
+        dispatch(roomReducer.actions.setRoomId(room));
         navigation.navigate(SCREEN_NAME.ROOM);
       } catch (e: any) {
         Alert.alert('', e.message);
       }
     }
-  }, [index, nickname, navigation]);
+
+    if (index === 1) {
+      navigation.navigate(SCREEN_NAME.ROOM);
+    }
+  }, [index, nickname, navigation, dispatch, userId]);
 
   const renderTabs = () => {
     return (
@@ -58,6 +88,8 @@ export const LogIn = ({navigation}: any) => {
         <TabController.TabPage index={0}>
           <View paddingH-24 paddingT-16>
             <TextField
+              value={password}
+              onChangeText={onChangePassword}
               migrate
               floatingPlaceholder
               text50L
@@ -70,6 +102,7 @@ export const LogIn = ({navigation}: any) => {
         <TabController.TabPage index={1}>
           <View paddingH-24 paddingT-16>
             <TextField
+              onChangeText={onChangeRoomId}
               migrate
               floatingPlaceholder
               text50L
@@ -77,6 +110,9 @@ export const LogIn = ({navigation}: any) => {
               grey10
             />
             <TextField
+              marginT-20
+              value={password}
+              onChangeText={onChangePassword}
               migrate
               floatingPlaceholder
               text50L
@@ -111,7 +147,7 @@ export const LogIn = ({navigation}: any) => {
         <TextField
           migrate
           value={nickname}
-          onChangeText={(nick: string) => setNickName(nick)}
+          onChangeText={onChangeNickname}
           floatingPlaceholder
           text40L
           placeholder="nickname"

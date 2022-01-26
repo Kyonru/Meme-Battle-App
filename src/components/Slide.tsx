@@ -2,6 +2,7 @@ import Color from 'color';
 import React from 'react';
 import {View, Text, StyleSheet, Dimensions, Image} from 'react-native';
 import Svg, {RadialGradient, Defs, Rect, Stop} from 'react-native-svg';
+import {Colors} from 'react-native-ui-lib';
 
 const {width, height} = Dimensions.get('screen');
 const SIZE = width - 75;
@@ -9,7 +10,6 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     padding: 75,
-    paddingTop: 150,
     alignItems: 'center',
   },
   image: {
@@ -17,10 +17,10 @@ const styles = StyleSheet.create({
     height: SIZE,
   },
   title: {
-    fontSize: 48,
+    fontSize: 32,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 16,
+    marginTop: 16,
     // fontFamily: 'SFProDisplay-Bold',
   },
   description: {
@@ -44,13 +44,15 @@ const Slide = ({slide}: SlideProps) => {
   if (!slide) {
     return <View />;
   }
-  const {picture, color, title, description} = slide;
+  const {url, color, name, description} = slide as any;
   const lighterColor = Color(color).lighten(0.8).toString();
+
+  const isDarkColor = Colors.isDark(color);
   return (
     <>
       <Svg style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id="gradient" cx="50%" cy="35%">
+          <RadialGradient id="gradient" cx="50%" cy="20%">
             <Stop offset="0%" stopColor={lighterColor} />
             <Stop offset="100%" stopColor={color} />
           </RadialGradient>
@@ -58,10 +60,12 @@ const Slide = ({slide}: SlideProps) => {
         <Rect x={0} y={0} width={width} height={height} fill="url(#gradient)" />
       </Svg>
       <View style={styles.container}>
-        <Image source={picture} style={styles.image} />
+        <Image source={{uri: url}} style={styles.image} resizeMode="contain" />
         <View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
+          <Text
+            style={[styles.title, {color: isDarkColor ? 'white' : 'black'}]}>
+            {name}
+          </Text>
         </View>
       </View>
     </>

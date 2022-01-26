@@ -16,8 +16,8 @@ import {Vector} from 'react-native-redash';
 import {SlideProps} from './Slide';
 
 export const {width: WIDTH, height: HEIGHT} = Dimensions.get('screen');
-export const MIN_LEDGE = 25;
-export const MARGIN_WIDTH = MIN_LEDGE + 50;
+export const MIN_LEDGE = 0;
+export const MARGIN_WIDTH = MIN_LEDGE + 0;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 

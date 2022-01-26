@@ -9,6 +9,22 @@ export enum WS_EVENT {
   VOTE_VARIATION = 'vote_variation',
 }
 
+export enum ROOM_EVENT {
+  joined = 'JOINED',
+  banned = 'BANNED',
+  started = 'STARTED',
+  newMeme = 'NEW_MEME',
+  newVariation = 'NEW_MEME_VARIATION',
+  completed = 'COMPLETED',
+  ended = 'ENDED',
+  recap = 'RECAP',
+  reviewMeme = 'REVIEW_MEME',
+  voteVariation = 'VOTE_VARIATION',
+  exit = 'EXIT',
+}
+
 export enum ApiBaseUrl {
   ROOM = 'room',
 }
+
+export const USER_ID = 'ASDSWE';

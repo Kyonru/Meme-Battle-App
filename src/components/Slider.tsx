@@ -1,5 +1,5 @@
 import React, {ReactElement, useCallback, useEffect} from 'react';
-import {StyleSheet, View} from 'react-native';
+import {Alert, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import Animated, {
   runOnJS,
   useAnimatedGestureHandler,
@@ -12,10 +12,16 @@ import {
   TouchableOpacity,
 } from 'react-native-gesture-handler';
 import {snapPoint, useVector} from 'react-native-redash';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Wave, {HEIGHT, MARGIN_WIDTH, Side, WIDTH} from './Wave';
 import Button from './Button';
 import {SlideProps} from './Slide';
+import {timeout} from '../utils/time';
+import {useSelector} from 'react-redux';
+import {RootState} from '../stores';
+import {ApiSocketClient} from '../services/api/websocket';
+import {Text, TextField, View} from 'react-native-ui-lib';
 
 const PREV = WIDTH;
 const NEXT = 0;
@@ -28,6 +34,9 @@ interface SliderProps {
   children: ReactElement<SlideProps>;
   prev?: ReactElement<SlideProps>;
   next?: ReactElement<SlideProps>;
+  variation: string;
+  onChangeVariation: (value: string) => any;
+  onSubmitVariation: () => any;
 }
 
 const Slider = ({
@@ -36,6 +45,9 @@ const Slider = ({
   prev,
   next,
   setIndex,
+  variation,
+  onChangeVariation,
+  onSubmitVariation,
 }: SliderProps) => {
   const hasPrev = !!prev;
   const hasNext = !!next;
@@ -45,6 +57,7 @@ const Slider = ({
   const activeSide = useSharedValue(Side.NONE);
   const isTransitioningLeft = useSharedValue(false);
   const isTransitioningRight = useSharedValue(false);
+  const roomId = useSelector<RootState>(state => state.room.roomId);
   const onGestureEvent = useAnimatedGestureHandler({
     onStart: ({x}) => {
       if (x <= MARGIN_WIDTH && hasPrev) {
@@ -137,10 +150,25 @@ const Slider = ({
     zIndex: zIndex.value,
   }));
 
+  const onClickNext = useCallback(async () => {
+    await timeout(1000);
+    onNext();
+    await timeout(250);
+    onChangeVariation('');
+  }, [onNext, onChangeVariation]);
+
   useEffect(() => {
     left.x.value = withSpring(MARGIN_WIDTH);
     right.x.value = withSpring(MARGIN_WIDTH);
   }, [index, left, right]);
+
+  useEffect(() => {
+    ApiSocketClient.on(`room:${roomId}`, onClickNext);
+
+    return () => {
+      ApiSocketClient.off(`room:${roomId}`, onClickNext);
+    };
+  }, [onClickNext, roomId]);
 
   return (
     <>
@@ -162,13 +190,13 @@ const Slider = ({
               />
             </Animated.View>
           )} */}
-          {next && (
+          {(prev || next) && (
             <Animated.View style={StyleSheet.absoluteFill}>
               <Wave
                 position={right}
                 side={Side.RIGHT}
                 isTransitioning={isTransitioningRight}>
-                {next}
+                {prev! || next!}
               </Wave>
               <Button
                 position={right}
@@ -179,10 +207,49 @@ const Slider = ({
           )}
         </Animated.View>
       </PanGestureHandler>
-      {/* <TouchableOpacity
-        style={{height: 100, width: 100, backgroundColor: 'red'}}
-        onPress={onNext}
-      /> */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 24,
+          paddingVertical: 24,
+          paddingTop: 12,
+          // borderRadius: 24,
+          borderTopStartRadius: 24,
+          borderTopEndRadius: 24,
+          backgroundColor: 'white',
+          borderWidth: 5,
+          borderBottomWidth: 0,
+
+          // backgroundColor: ,
+        }}>
+        <View>
+          <View row spread centerV>
+            <Text text70L>#{roomId}</Text>
+            <TouchableOpacity activeOpacity={0.2} onPress={onSubmitVariation}>
+              <View>
+                <Icon
+                  name="check"
+                  color="black"
+                  size={30}
+                  style={{alignItems: 'center', justifyContent: 'center'}}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+          <TextField
+            value={variation}
+            onChangeText={onChangeVariation}
+            migrate
+            multiline
+            placeholder="caption"
+            style={{backgroundColor: 'white', height: 124, fontSize: 24}}
+          />
+        </View>
+      </KeyboardAvoidingView>
     </>
   );
 };
