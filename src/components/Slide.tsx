@@ -1,8 +1,9 @@
 import Color from 'color';
 import React from 'react';
-import {View, Text, StyleSheet, Dimensions, Image} from 'react-native';
+import {Text, StyleSheet, Dimensions, Image} from 'react-native';
 import Svg, {RadialGradient, Defs, Rect, Stop} from 'react-native-svg';
-import {Colors} from 'react-native-ui-lib';
+import {Avatar, Colors, View} from 'react-native-ui-lib';
+import {Meme, MemeVariation} from '../@types';
 
 const {width, height} = Dimensions.get('screen');
 const SIZE = width - 75;
@@ -32,22 +33,19 @@ const styles = StyleSheet.create({
 });
 
 export interface SlideProps {
-  slide: {
-    color: string;
-    title: string;
-    description: string;
-    picture: ReturnType<typeof require>;
-  };
+  slide: Meme;
+  variations: {[key: string]: MemeVariation};
 }
 
-const Slide = ({slide}: SlideProps) => {
+const Slide = ({slide, variations}: SlideProps) => {
   if (!slide) {
     return <View />;
   }
-  const {url, color, name, description} = slide as any;
+  const {url, color, name} = slide;
   const lighterColor = Color(color).lighten(0.8).toString();
 
   const isDarkColor = Colors.isDark(color);
+  console.log(slide);
   return (
     <>
       <Svg style={StyleSheet.absoluteFill}>
@@ -61,11 +59,35 @@ const Slide = ({slide}: SlideProps) => {
       </Svg>
       <View style={styles.container}>
         <Image source={{uri: url}} style={styles.image} resizeMode="contain" />
-        <View>
+        <View marginB-24>
           <Text
             style={[styles.title, {color: isDarkColor ? 'white' : 'black'}]}>
             {name}
           </Text>
+        </View>
+        <View marginT-48 row>
+          {variations &&
+            Object.keys(variations).map((key: string) => (
+              <Avatar
+                key={variations[key].id}
+                label={
+                  `${variations[key].name}`.charAt(0).toLocaleUpperCase() +
+                  `${variations[key].name}`.charAt(1).toLocaleUpperCase()
+                }
+                containerStyle={{
+                  marginHorizontal: 4,
+                  borderWidth: 1,
+                  borderColor: 'black',
+                }}
+                size={30}
+                backgroundColor={variations[key].color}
+                labelColor={
+                  Colors.isDark(variations[key].color || 'white')
+                    ? 'white'
+                    : 'black'
+                }
+              />
+            ))}
         </View>
       </View>
     </>

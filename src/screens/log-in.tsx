@@ -38,6 +38,7 @@ export const LogIn = ({navigation}: any) => {
   const [password, setPassword] = useState('');
   const dispatch = useDispatch();
   const userId = useSelector<RootState>(state => state.room.userId) as string;
+  const userColor = useSelector<RootState>(state => state.room.color) as string;
 
   const onChangeTab = useCallback(tab => {
     setIndex(tab);
@@ -140,7 +141,7 @@ export const LogIn = ({navigation}: any) => {
               `${nickname}`.charAt(1).toLocaleUpperCase()
             }
             size={75}
-            backgroundColor={Colors.violet60}
+            backgroundColor={userColor}
             onPress={() => {}}
           />
         </View>

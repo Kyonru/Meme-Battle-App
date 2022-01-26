@@ -22,6 +22,7 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../stores';
 import {ApiSocketClient} from '../services/api/websocket';
 import {Text, TextField, View} from 'react-native-ui-lib';
+import {ROOM_EVENT} from '../services/api/constants';
 
 const PREV = WIDTH;
 const NEXT = 0;
@@ -30,13 +31,14 @@ const RIGHT_SNAP_POINTS = [NEXT, WIDTH - MARGIN_WIDTH];
 
 interface SliderProps {
   index: number;
+  meme?: number;
   setIndex: (value: number) => void;
   children: ReactElement<SlideProps>;
   prev?: ReactElement<SlideProps>;
   next?: ReactElement<SlideProps>;
   variation: string;
   onChangeVariation: (value: string) => any;
-  onSubmitVariation: () => any;
+  onSubmitVariation: (id?: number) => any;
 }
 
 const Slider = ({
@@ -44,6 +46,7 @@ const Slider = ({
   children: current,
   prev,
   next,
+  meme,
   setIndex,
   variation,
   onChangeVariation,
@@ -150,12 +153,21 @@ const Slider = ({
     zIndex: zIndex.value,
   }));
 
-  const onClickNext = useCallback(async () => {
-    await timeout(1000);
-    onNext();
-    await timeout(250);
-    onChangeVariation('');
-  }, [onNext, onChangeVariation]);
+  const onSubmit = useCallback(() => {
+    onSubmitVariation(meme);
+  }, [meme, onSubmitVariation]);
+
+  const onClickNext = useCallback(
+    async (response: any) => {
+      if (`${response.event}` === `${ROOM_EVENT.newMeme}`) {
+        await timeout(500);
+        onNext();
+        await timeout(250);
+        onChangeVariation('');
+      }
+    },
+    [onNext, onChangeVariation],
+  );
 
   useEffect(() => {
     left.x.value = withSpring(MARGIN_WIDTH);
@@ -229,7 +241,7 @@ const Slider = ({
         <View>
           <View row spread centerV>
             <Text text70L>#{roomId}</Text>
-            <TouchableOpacity activeOpacity={0.2} onPress={onSubmitVariation}>
+            <TouchableOpacity activeOpacity={0.2} onPress={onSubmit}>
               <View>
                 <Icon
                   name="check"

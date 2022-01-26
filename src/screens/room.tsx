@@ -9,16 +9,15 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {Alert, View} from 'react-native';
+import {Alert, View, Dimensions} from 'react-native';
 import {
   Button,
   Colors,
   LoaderScreen,
   Text,
-  Toast,
   TouchableOpacity,
 } from 'react-native-ui-lib';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Slider from '../components/Slider';
@@ -26,57 +25,22 @@ import Slide from '../components/Slide';
 import {ApiSocketClient} from '../services/api/websocket';
 import {RootState} from '../stores';
 import {ROOM_EVENT, WS_EVENT} from '../services/api/constants';
-import {Meme, Room} from '../@types';
-import Svg, {Circle, G} from 'react-native-svg';
+import {Member, Meme, MemeVariation, Room} from '../@types';
+import Svg, {Circle, G, Text as SVGText} from 'react-native-svg';
+import {getBubbleTitleSize, packBubbles} from '../utils/bubbles';
+import Color from 'color';
 
-const slides = [
-  {
-    color: '#F2A1AD',
-    title: 'Dessert Recipes',
-    description:
-      'Hot or cold, our dessert recipes can turn an average meal into a memorable event',
-    picture: require('../assets/1.png'),
-  },
-  {
-    color: '#0090D6',
-    title: 'Healthy Foods',
-    description:
-      'Discover healthy recipes that are easy to do with detailed cooking instructions from top chefs',
-    picture: require('../assets/5.png'),
-  },
-  {
-    color: '#69C743',
-    title: 'Easy Meal Ideas',
-    description:
-      'explore recipes by food type, preparation method, cuisine, country and more',
-    picture: require('../assets/4.png'),
-  },
-  {
-    color: '#FB3A4D',
-    title: '10000+ Recipes',
-    description:
-      'Browse thousands of curated recipes from top chefs, each with detailled cooking instructions',
-    picture: require('../assets/2.png'),
-  },
-  {
-    color: '#F2AD62',
-    title: 'Video Tutorials',
-    description:
-      'Browse our best themed recipes, cooking tips, and how-to food video & photos',
-    picture: require('../assets/3.png'),
-  },
-];
-
-export const assets = slides.map(({picture}) => picture);
+const {width} = Dimensions.get('screen');
 
 const LiquidSwipe = ({
   variation,
   onChangeVariation,
   memes,
+  variations,
   onSubmitVariation,
 }: any) => {
   const [index, setIndex] = useState(0);
-  const prev = memes[index - 1];
+  // const prev = memes[index - 1];
   const next = memes[index + 1];
 
   return (
@@ -86,10 +50,17 @@ const LiquidSwipe = ({
       onSubmitVariation={onSubmitVariation}
       key={index}
       index={index}
+      meme={memes[index]?.id}
       setIndex={setIndex}
       // prev={prev && <Slide slide={prev} />}
-      next={next && <Slide slide={next} />}>
-      <Slide slide={memes[index]} />
+      next={
+        next && <Slide variations={variations[memes[index]?.id]} slide={next} />
+      }>
+      <Slide
+        variations={variations[memes[index]?.id]}
+        key={index}
+        slide={memes[index]}
+      />
     </Slider>
   );
 };
@@ -97,13 +68,15 @@ const LiquidSwipe = ({
 const App = () => {
   const [room, setRoom] = useState<Room>();
   const [memes, setMemes] = useState<Meme[]>([]);
-  const [currentMeme, setCurrentMeme] = useState<Meme>();
-  const [nextMeme, setNextMeme] = useState<Meme>();
   const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [memeVariations, setMemeVariations] = useState<{
+    [key: string]: MemeVariation;
+  }>({});
   const [variation, setVariation] = useState('');
-  const dispatch = useDispatch();
   const userId = useSelector<RootState>(state => state.room.userId);
   const roomId = useSelector<RootState>(state => state.room.roomId);
+  const userColor = useSelector<RootState>(state => state.room.color);
   const nickname = useSelector<RootState>(state => state.room.nickname);
   const password =
     useSelector<RootState>(state => state.room.password) || undefined;
@@ -113,14 +86,22 @@ const App = () => {
       setLoading(true);
       ApiSocketClient.emit(
         WS_EVENT.JOIN,
-        {id: roomId, userId, name: nickname, password},
+        {id: roomId, userId, name: nickname, password, color: userColor},
         (response: {joined: boolean; room: Room}) => {
-          // dispatch(roomReducer.actions.updateDriverOnlineStatus(status));
           setRoom(response.room);
+          if (
+            response.room.members &&
+            Object.keys(response.room.members).length
+          ) {
+            const mbs = Object.keys(response.room.members).map(
+              key => response.room.members[key],
+            );
+            setMembers(mbs);
+          }
         },
       );
     }
-  }, [roomId, nickname, password, userId]);
+  }, [roomId, nickname, password, userId, userColor]);
 
   const onStart = useCallback(() => {
     if (ApiSocketClient && roomId) {
@@ -135,7 +116,7 @@ const App = () => {
               ApiSocketClient.emit(
                 WS_EVENT.START,
                 {id: roomId, userId, name: nickname, password},
-                (started: boolean) => {
+                () => {
                   // dispatch(roomReducer.actions.updateDriverOnlineStatus(status));
                   setLoading(false);
                 },
@@ -161,7 +142,7 @@ const App = () => {
               ApiSocketClient.emit(
                 WS_EVENT.NEXT_MEME,
                 {id: roomId, userId, name: nickname, password},
-                (started: boolean) => {
+                () => {
                   // dispatch(roomReducer.actions.updateDriverOnlineStatus(status));
                   setLoading(false);
                 },
@@ -174,44 +155,57 @@ const App = () => {
     }
   }, [roomId, nickname, password, userId]);
 
-  const onSubmitVariation = useCallback(() => {
-    if (ApiSocketClient && roomId) {
-      ApiSocketClient.emit(
-        WS_EVENT.SUBMIT_VARIATION,
-        {
-          id: roomId,
-          userId,
-          name: nickname,
-          password,
-          variation,
-          variationOriginalId: undefined,
-        },
-        (started: boolean) => {
-          // dispatch(roomReducer.actions.updateDriverOnlineStatus(status));
-          setLoading(false);
-        },
-      );
-    }
-  }, [roomId, nickname, password, userId, variation]);
+  const onSubmitVariation = useCallback(
+    (memeId?: string) => {
+      if (ApiSocketClient && roomId && memeId && variation) {
+        ApiSocketClient.emit(
+          WS_EVENT.SUBMIT_VARIATION,
+          {
+            roomId,
+            userId,
+            memeId,
+            variation,
+            variationOriginalId: undefined,
+          },
+          () => {
+            // dispatch(roomReducer.actions.updateDriverOnlineStatus(status));
+            setLoading(false);
+          },
+        );
+      }
+    },
+    [roomId, userId, variation],
+  );
 
   const onChangeVariation = useCallback(
     (value: string) => setVariation(value),
     [],
   );
 
-  const onUpdateMeme = useCallback(
+  const onRoomUpdate = useCallback(
     (response: any) => {
       if (`${response.event}` === `${ROOM_EVENT.newMeme}`) {
         setLoading(false);
         setMemes(memes.concat(response.meme));
-        if (!currentMeme) {
-          setCurrentMeme(response.meme);
-          return;
-        }
-        setNextMeme(response.meme);
+      }
+      if (`${response.event}` === `${ROOM_EVENT.joined}`) {
+        setMembers(members.concat(response.user));
+      }
+      if (`${response.event}` === `${ROOM_EVENT.newVariation}`) {
+        setMemeVariations({
+          ...memeVariations,
+          [response.meme]: {
+            ...memeVariations[response.meme],
+            [response.user]: {
+              ...response.variation,
+              color: response.color,
+              name: response.name,
+            },
+          },
+        });
       }
     },
-    [currentMeme, memes],
+    [memes, members, memeVariations],
   );
 
   useEffect(() => {
@@ -220,12 +214,15 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    ApiSocketClient.on(`room:${roomId}`, onUpdateMeme);
+    ApiSocketClient.on(`room:${roomId}`, onRoomUpdate);
 
     return () => {
-      ApiSocketClient.off(`room:${roomId}`, onUpdateMeme);
+      ApiSocketClient.off(`room:${roomId}`, onRoomUpdate);
     };
-  }, [currentMeme, memes, onUpdateMeme, roomId]);
+  }, [memes, onRoomUpdate, roomId]);
+
+  const root =
+    members.length > 0 ? packBubbles(members, width, 400).leaves() : [];
 
   return (
     <View style={{flex: 1}}>
@@ -242,23 +239,34 @@ const App = () => {
             }}>
             Room {`\n#${roomId}`}
           </Text>
-          <View style={{flex: 1, backgroundColor: 'red'}}>
-            <Svg width={400} height={300}>
-              <G transform={`translate(${50 + 1},${50 + 1})`}>
-                <Circle r={10} fill={'black'} />
-              </G>
-              <G transform={`translate(${50 + 15},${50 + 15})`}>
-                <Circle r={10} fill={'blue'} />
-              </G>
-              <G transform={`translate(${50 + 20},${45})`}>
-                <Circle r={10} fill={'blue'} />
-              </G>
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Svg width={width} height={400}>
+              {root.map((leaf: any) => (
+                <G transform={`translate(${leaf.x},${leaf.y})`}>
+                  <Circle r={leaf.r} fill={leaf.data.color} />
+                  <SVGText
+                    fill={Colors.isDark(leaf.data.color) ? 'white' : 'black'}
+                    fontSize={getBubbleTitleSize(members.length)}
+                    x="0"
+                    y="0.1"
+                    textAnchor="middle">
+                    {leaf.data.name}
+                  </SVGText>
+                </G>
+              ))}
             </Svg>
           </View>
           <LoaderScreen
-            color={Colors.blue50}
+            color={Colors.white}
+            messageStyle={{color: Colors.white}}
             message="Waiting for host..."
             overlay
+            backgroundColor={Color('#000424').alpha(0.85).string()}
           />
           {room?.host === userId && (
             <Button
@@ -281,8 +289,7 @@ const App = () => {
       )}
       {!loading && (
         <LiquidSwipe
-          currentMeme={currentMeme}
-          nextMeme={nextMeme}
+          variations={memeVariations || {}}
           memes={memes}
           onChangeVariation={onChangeVariation}
           variation={variation}

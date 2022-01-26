@@ -11,6 +11,8 @@ export interface User {
 
 export interface Member extends User {
   role: MemberRole;
+  color: string;
+  order: number;
 }
 
 export enum RoomStatus {
@@ -24,6 +26,8 @@ export interface MemeVariation {
   id: string;
   basedOn?: string;
   description: string;
+  color?: string;
+  name?: string;
   voters: {[key: string]: Partial<Member>};
 }
 
