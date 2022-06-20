@@ -29,6 +29,7 @@ import {Member, Meme, MemeVariation, Room} from '../@types';
 import Svg, {Circle, G, Text as SVGText} from 'react-native-svg';
 import {getBubbleTitleSize, packBubbles} from '../utils/bubbles';
 import Color from 'color';
+import {SCREEN_NAME} from '../navigation/constants';
 
 const {width} = Dimensions.get('screen');
 
@@ -65,7 +66,7 @@ const LiquidSwipe = ({
   );
 };
 
-const App = () => {
+const App = ({navigation}: any) => {
   const [room, setRoom] = useState<Room>();
   const [memes, setMemes] = useState<Meme[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +131,34 @@ const App = () => {
   }, [roomId, nickname, password, userId]);
 
   const onNextMeme = useCallback(() => {
+    const onPress = () => {
+      ApiSocketClient.emit(
+        WS_EVENT.NEXT_MEME,
+        {id: roomId, userId, name: nickname, password},
+        () => {
+          setLoading(false);
+        },
+      );
+    };
+
     if (ApiSocketClient && roomId) {
+      let allMemberSubmitted = true;
+
+      members.forEach(member => {
+        const meme = memes[memes.length - 1];
+
+        if (meme && memeVariations) {
+          allMemberSubmitted =
+            !!((memeVariations[meme.id] || {}) as any)[member.id] &&
+            allMemberSubmitted
+              ? true
+              : false;
+        }
+      });
+      if (allMemberSubmitted) {
+        onPress();
+        return;
+      }
       Alert.alert(
         'Are you sure?',
         'Some members might not have submitted their variation.',
@@ -138,22 +166,13 @@ const App = () => {
           {
             text: 'Sure!',
             style: 'destructive',
-            onPress: () => {
-              ApiSocketClient.emit(
-                WS_EVENT.NEXT_MEME,
-                {id: roomId, userId, name: nickname, password},
-                () => {
-                  // dispatch(roomReducer.actions.updateDriverOnlineStatus(status));
-                  setLoading(false);
-                },
-              );
-            },
+            onPress,
           },
           {text: 'Wait!', style: 'cancel'},
         ],
       );
     }
-  }, [roomId, nickname, password, userId]);
+  }, [roomId, nickname, password, userId, members, memes, memeVariations]);
 
   const onSubmitVariation = useCallback(
     (memeId?: string) => {
@@ -204,8 +223,13 @@ const App = () => {
           },
         });
       }
+      if (`${response.event}` === `${ROOM_EVENT.completed}`) {
+        navigation.navigate(SCREEN_NAME.ENDING, {
+          isHost: room?.host === userId,
+        });
+      }
     },
-    [memes, members, memeVariations],
+    [memes, members, memeVariations, navigation, room, userId],
   );
 
   useEffect(() => {
@@ -247,7 +271,9 @@ const App = () => {
             }}>
             <Svg width={width} height={400}>
               {root.map((leaf: any) => (
-                <G transform={`translate(${leaf.x},${leaf.y})`}>
+                <G
+                  key={leaf.data.id}
+                  transform={`translate(${leaf.x},${leaf.y})`}>
                   <Circle r={leaf.r} fill={leaf.data.color} />
                   <SVGText
                     fill={Colors.isDark(leaf.data.color) ? 'white' : 'black'}
@@ -278,9 +304,9 @@ const App = () => {
                 padding: 24,
                 zIndex: 999,
               }}
-              text70
+              text70BL
               white
-              background-orange30
+              background-black
               label={'Start'}
               onPress={onStart}
             />

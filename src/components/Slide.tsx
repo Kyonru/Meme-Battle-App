@@ -4,6 +4,9 @@ import {Text, StyleSheet, Dimensions, Image} from 'react-native';
 import Svg, {RadialGradient, Defs, Rect, Stop} from 'react-native-svg';
 import {Avatar, Colors, View} from 'react-native-ui-lib';
 import {Meme, MemeVariation} from '../@types';
+import Animated, {SlideInRight} from 'react-native-reanimated';
+
+const AnimatedView = Animated.createAnimatedComponent(Avatar);
 
 const {width, height} = Dimensions.get('screen');
 const SIZE = width - 75;
@@ -68,7 +71,8 @@ const Slide = ({slide, variations}: SlideProps) => {
         <View marginT-48 row>
           {variations &&
             Object.keys(variations).map((key: string) => (
-              <Avatar
+              <AnimatedView
+                entering={SlideInRight}
                 key={variations[key].id}
                 label={
                   `${variations[key].name}`.charAt(0).toLocaleUpperCase() +

@@ -128,10 +128,10 @@ export const LogIn = ({navigation}: any) => {
   };
 
   return (
-    <View flex paddingT-120>
-      <View paddingH-24 marginB-40>
-        <View center>
-          <Text blue50 text20>
+    <View flex paddingT-60>
+      <View paddingH-24>
+        <View center marginB-16>
+          <Text black text20 marginB-20>
             Meme battle!
           </Text>
           <Avatar
@@ -140,6 +140,7 @@ export const LogIn = ({navigation}: any) => {
               `${nickname}`.charAt(0).toLocaleUpperCase() +
               `${nickname}`.charAt(1).toLocaleUpperCase()
             }
+            labelColor={Colors.isDark(userColor) ? 'white' : 'black'}
             size={75}
             backgroundColor={userColor}
             onPress={() => {}}
@@ -153,7 +154,8 @@ export const LogIn = ({navigation}: any) => {
           text40L
           placeholder="nickname"
           grey10
-          marginB-40
+          marginT-40
+          marginB-20
         />
       </View>
 
@@ -163,18 +165,18 @@ export const LogIn = ({navigation}: any) => {
         items={mappedTabs}>
         <TabController.TabBar
           backgroundColor={'transparent'}
-          activeBackgroundColor={Colors.blue80}
-          selectedLabelColor={Colors.blue50}
-          indicatorStyle={{backgroundColor: Colors.blue50}}
+          labelColor={Colors.grey30}
+          selectedLabelColor={Colors.black}
+          indicatorStyle={{backgroundColor: userColor}}
           centerSelected={true}
         />
         {renderTabs()}
       </TabController>
       <View flex bottom marginB-40 paddingH-24>
         <Button
-          text70
+          text70BL
           white
-          background-orange30
+          background-black
           label={index === 0 ? 'Create' : 'Join'}
           onPress={onContinue}
         />

@@ -4,6 +4,7 @@ export enum WS_EVENT {
   JOIN = 'join',
   START = 'start',
   NEXT_MEME = 'next_meme',
+  NEXT_REVIEW = 'next_review',
   SUBMIT_VARIATION = 'submit_variation',
   START_RECAP = 'start_recap',
   VOTE_VARIATION = 'vote_variation',
@@ -20,6 +21,7 @@ export enum ROOM_EVENT {
   recap = 'RECAP',
   reviewMeme = 'REVIEW_MEME',
   voteVariation = 'VOTE_VARIATION',
+  memeWinner = 'MEME_WINNER',
   exit = 'EXIT',
 }
 

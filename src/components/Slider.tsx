@@ -1,9 +1,8 @@
 import React, {ReactElement, useCallback, useEffect} from 'react';
-import {Alert, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import {KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import Animated, {
   runOnJS,
   useAnimatedGestureHandler,
-  useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
@@ -149,10 +148,6 @@ const Slider = ({
     right.y.value = withSpring(HEIGHT / 2, {velocity: 0});
   }, [activeSide, index, isTransitioningRight, right.x, right.y, setIndex]);
 
-  const leftStyle = useAnimatedStyle(() => ({
-    zIndex: zIndex.value,
-  }));
-
   const onSubmit = useCallback(() => {
     onSubmitVariation(meme);
   }, [meme, onSubmitVariation]);
@@ -235,7 +230,7 @@ const Slider = ({
           backgroundColor: 'white',
           borderWidth: 5,
           borderBottomWidth: 0,
-
+          zIndex: 999,
           // backgroundColor: ,
         }}>
         <View>
